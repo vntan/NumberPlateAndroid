@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">PlateDetection</string>
+    <string name="tabImageDetection">Image Detection</string>
+    <string name="tabCameraDetection">Camera Detection</string>
+    <string name="btnDetect">Find Plate</string>
+    <string name="btnLoadImage">Load Plate</string>
+</resources>
