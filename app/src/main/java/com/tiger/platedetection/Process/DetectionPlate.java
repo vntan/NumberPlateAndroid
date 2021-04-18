@@ -36,11 +36,17 @@ public class DetectionPlate {
 
     private List<PlateInfo> plateList;
     private Context context;
-    public ImageView imgView;
+    ImageView imgView;
+    CameraSurface cameraSurface;
 
     public DetectionPlate(Context context, ImageView imgView) {
         this.context = context;
         this.imgView = imgView;
+    }
+
+    public DetectionPlate(Context context, CameraSurface cameraSurface) {
+        this.context = context;
+        this.cameraSurface = cameraSurface;
     }
 
     public List<PlateInfo> getPlateList() {
@@ -54,7 +60,9 @@ public class DetectionPlate {
     boolean checkNumber(float num){
         return num >=0 && num<=1;
     }
-    List<PlateInfo> getAllPlate(Bitmap bitmap) {
+
+
+    List<PlateInfo> getAllPlate(Bitmap bitmap, int accurancy, boolean cameraUsing){
         List<PlateInfo> plateInfoList = new ArrayList<>();
         try {
             Model model = Model.newInstance(context);
@@ -75,22 +83,27 @@ public class DetectionPlate {
 
             for (int i = 0; i < numberDetection; i++) {
                 float score = scores.getFloatArray()[i];
-                if (score * 100 >= 40) {
-                    Log.d("FINDING", "--------------------------------------------");
-                    Log.d("FINDING", String.format("Width Image  %d", bitmap.getWidth()));
-                    Log.d("FINDING", String.format("Height Image  %d", bitmap.getHeight()));
-                    Log.d("FINDING", String.format("Score: %f", score * 100));
-                    Log.d("FINDING", String.format("Location: %f %f %f %f", location[index], location[index + 1], location[index + 2], location[index + 3]));
-
-                    int top = (int) (location[index] * bitmap.getHeight());
-                    int left = (int) (location[index + 1] * bitmap.getWidth());
-                    int right = (int) (location[index + 3] * bitmap.getWidth());
-                    int bottom = (int) (location[index + 2] * bitmap.getHeight());
-
-                    count++;
+                if (score * 100 >= accurancy) {
 
                     if (checkNumber(location[index]) && checkNumber(location[index+1]) &&checkNumber(location[index+2]) &&checkNumber(location[index+3]) )
+                    {
+                        count++;
+                        Log.d("FINDING", "--------------------------------------------");
+                        Log.d("FINDING", String.format("Width Image  %d", bitmap.getWidth()));
+                        Log.d("FINDING", String.format("Height Image  %d", bitmap.getHeight()));
+                        Log.d("FINDING", String.format("Score: %f", score * 100));
+                        Log.d("FINDING", String.format("Location: %f %f %f %f", location[index], location[index + 1], location[index + 2], location[index + 3]));
+
+                        int top = (int) (location[index] * bitmap.getHeight());
+                        int left = (int) (location[index + 1] * bitmap.getWidth());
+                        int right = (int) (location[index + 3] * bitmap.getWidth());
+                        int bottom = (int) (location[index + 2] * bitmap.getHeight());
+
                         plateInfoList.add(new PlateInfo("",top, left, bottom, right ));
+
+
+
+                    }
 
                 }
                 index += 4;
@@ -111,12 +124,14 @@ public class DetectionPlate {
 
         if (imgView == null) return;
 
-        if (plateList == null) plateList = getAllPlate(bitmap);
+        if (plateList == null) plateList = getAllPlate(bitmap, 40, false);
 
         if (plateList.size() < 1) {
             Toast.makeText(context, "Not found", Toast.LENGTH_LONG);
             return;
         }
+
+
 
         Bitmap mask = bitmap.copy(Bitmap.Config.ARGB_8888, true);
         for (PlateInfo plate : plateList) {
@@ -124,7 +139,7 @@ public class DetectionPlate {
             Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
             paint.setColor(Color.YELLOW);
             paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(5);
+            paint.setStrokeWidth(10);
 
             canvas.drawRect(plate.getLeft(), plate.getTop(), plate.getRight(), plate.getBottom(), paint);
 
@@ -151,26 +166,89 @@ public class DetectionPlate {
                         }
                     }
 
-                    Log.d("FINDING", "detectPlate: "+name);
-                    Paint paintText = new Paint();
-                    paintText.setColor(Color.YELLOW);
-                    paintText.setStyle(Paint.Style.FILL);
+                    if (name != "") {
+                        Log.d("FINDING", "detectPlate: "+name);
+                        Paint paintText = new Paint();
+                        paintText.setColor(Color.YELLOW);
+                        paintText.setStyle(Paint.Style.FILL);
 
-                    int size = 0;
-                    do {
-                        paintText.setTextSize(++ size);
-                    } while(paintText.measureText(name) < getWidth);
+                        int size = 0;
+                        do {
+                            paintText.setTextSize(++ size);
+                        } while(paintText.measureText(name) < getWidth);
 
-                    paintText.setTextSize(size - 1);
-                    canvas.drawText(name, plate.getLeft(), plate.getTop() - 10 , paintText);
+                        paintText.setTextSize(size - 1);
+                        canvas.drawText(name, plate.getLeft(), plate.getTop() - 10 , paintText);
+                        imgView.setImageBitmap(mask);
+
+                    }
+                }
+
+            })
+            .addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
                     imgView.setImageBitmap(mask);
-
                 }
             });
         }
         imgView.setImageBitmap(mask);
     }
 
+    synchronized public void detectPlateRealTime(Bitmap bitmap, int orientation, ImageView imgView) {
+/*        this.imgView = imgView;
+        detectPlate(bitmap);
+        plateList = new ArrayList<>();*/
+        if (cameraSurface == null) return;
+        plateList = getAllPlate(bitmap, 50, true);
+
+        Log.d("FINDING", "detectPlate2: "+plateList.size());
+        for (PlateInfo plate : plateList) {
+            //.d("FINDING", "AHUHU: ");
+            int getWidth = plate.getLeft() + plate.getRight()-plate.getLeft() + 10 >bitmap.getWidth() ? plate.getRight()-plate.getLeft(): plate.getRight()-plate.getLeft()+10;
+            int getHeight = plate.getLeft() + plate.getBottom()-plate.getTop() + 10 >bitmap.getHeight() ? plate.getBottom()-plate.getTop(): plate.getBottom()-plate.getTop() + 10;
+
+
+            Bitmap bitmapCopy = Bitmap.createBitmap(bitmap, plate.getLeft(), plate.getTop(), getWidth, getHeight);
+            InputImage image = InputImage.fromBitmap(bitmapCopy, 0);
+            switch (orientation){
+                case 0:
+                    image = InputImage.fromBitmap(bitmapCopy, 270);
+                    break;
+                case 90:
+                    image = InputImage.fromBitmap(bitmapCopy, 0);
+                    break;
+                case 180:
+                    image = InputImage.fromBitmap(bitmapCopy, 90);
+                    break;
+                case 270:
+                    image = InputImage.fromBitmap(bitmapCopy, 180);
+                    break;
+            }
+
+            TextRecognizer recognizer = TextRecognition.getClient();
+
+            recognizer.process(image).addOnSuccessListener(new OnSuccessListener<Text>() {
+                @Override
+                public void onSuccess(Text text) {
+                    Log.d("TEXTFIND", text.getText());
+                    if (text.getTextBlocks().size() > 0){
+                        Text.TextBlock block = text.getTextBlocks().get(0);
+                        if (block.getLines().size() > 1) {
+                            plate.setNamePlate(block.getLines().get(0).getText() + " " +  block.getLines().get(1).getText());
+                        }
+                    }
+
+                    cameraSurface.reDraw(plateList, orientation);
+                }
+            });
+
+
+        }
+
+        cameraSurface.reDraw(plateList, orientation);
+
+    }
 
 
 }

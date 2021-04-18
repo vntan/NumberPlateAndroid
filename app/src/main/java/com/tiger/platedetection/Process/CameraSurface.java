@@ -5,6 +5,7 @@ import android.graphics.Camera;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -17,6 +18,7 @@ public class CameraSurface extends SurfaceView implements SurfaceHolder.Callback
     public final String TAG = CameraSurface.class.getSimpleName();
 
     Context context;
+    int rotation;
     List<PlateInfo> plateInfoList;
 
     CameraSurface(Context context) {
@@ -26,10 +28,12 @@ public class CameraSurface extends SurfaceView implements SurfaceHolder.Callback
     public CameraSurface(Context context, int width, int height) {
         super(context);
         this.context = context;
+        this.rotation = 0;
         setWillNotDraw(false);
     }
 
-    public void reDraw(List<PlateInfo> plateInfoList){
+    public void reDraw(List<PlateInfo> plateInfoList, int rotation){
+        this.rotation = rotation;
         this.plateInfoList = plateInfoList;
         invalidate();
     }
@@ -54,13 +58,42 @@ public class CameraSurface extends SurfaceView implements SurfaceHolder.Callback
         super.onDraw(canvas);
         Log.d(TAG, String.format("onDraw: --------------------------------------"));
 
+        if (plateInfoList == null || plateInfoList.size() <= 0) return;
         Paint paint = new Paint();
         paint.setColor(Color.YELLOW);
         paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(10);
+        paint.setStrokeWidth(5);
+
+        Paint paintText = new Paint();
+        paintText.setColor(Color.YELLOW);
+        paintText.setStyle(Paint.Style.FILL);
+
+        int size = 0;
 
         for (PlateInfo plate: plateInfoList) {
             canvas.drawRect(plate.getLeft(), plate.getTop(), plate.getRight(), plate.getBottom(), paint);
+            if (plate.getNamePlate() != ""){
+                do {
+                    paintText.setTextSize(++ size);
+                } while(paintText.measureText(plate.getNamePlate()) < ( plate.getRight() - plate.getLeft()));
+                paintText.setTextSize(size - 1);
+
+                switch (rotation){
+                    case 0:
+                        canvas.drawText(plate.getNamePlate(), plate.getLeft(), plate.getTop() - 20, paintText);                        break;
+                    case 90:
+                        canvas.drawText(plate.getNamePlate(), plate.getLeft(), plate.getTop() - 10 , paintText);
+                        break;
+                    case 180:
+                        canvas.drawText(plate.getNamePlate(), plate.getLeft() , plate.getBottom() - 10, paintText);
+                        break;
+                    case 270:
+                        canvas.drawText(plate.getNamePlate(), plate.getLeft(), plate.getBottom() - 10 , paintText);
+                        break;
+                }
+
+            }
+
         }
     }
 }
