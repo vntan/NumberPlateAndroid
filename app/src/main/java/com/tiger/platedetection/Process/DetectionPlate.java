@@ -124,17 +124,17 @@ public class DetectionPlate {
 
         if (imgView == null) return;
 
-        if (plateList == null) plateList = getAllPlate(bitmap, 40, false);
+        plateList = getAllPlate(bitmap, 40, false);
 
-        if (plateList.size() < 1) {
-            Toast.makeText(context, "Not found", Toast.LENGTH_LONG);
+        if (plateList.isEmpty()) {
+            Toast.makeText(context, "Not found", Toast.LENGTH_LONG).show();
             return;
         }
 
 
-
         Bitmap mask = bitmap.copy(Bitmap.Config.ARGB_8888, true);
         for (PlateInfo plate : plateList) {
+            Log.d(TAG, "detectPlate: "+plateList.size()+plate.getLeft()+ plate.getTop()+ plate.getRight()+plate.getBottom());
             Canvas canvas = new Canvas(mask);
             Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
             paint.setColor(Color.YELLOW);
@@ -159,7 +159,14 @@ public class DetectionPlate {
                     String name = "";
 
                     if (text.getTextBlocks().size() > 0){
-                        Text.TextBlock block = text.getTextBlocks().get(0);
+                        int index = 0;
+                        Text.TextBlock block = text.getTextBlocks().get(index);
+
+                        while (index < text.getTextBlocks().size() && block.getLines().size() < 2){
+                            block = text.getTextBlocks().get(index);
+                            index++;
+                        }
+
                         if (block.getLines().size() > 1) {
                             name = block.getLines().get(0).getText() + " " +  block.getLines().get(1).getText();
 
@@ -172,12 +179,29 @@ public class DetectionPlate {
                         paintText.setColor(Color.YELLOW);
                         paintText.setStyle(Paint.Style.FILL);
 
+                        Paint paintBackground = new Paint();
+                        paintBackground.setColor(Color.RED);
+                        paintBackground.setStyle(Paint.Style.FILL);
+
                         int size = 0;
                         do {
                             paintText.setTextSize(++ size);
                         } while(paintText.measureText(name) < getWidth);
 
                         paintText.setTextSize(size - 1);
+
+
+                        Rect rect = new Rect();
+                        Paint.FontMetrics fm = paintText.getFontMetrics();
+                        float height = fm.descent - fm.ascent;
+
+
+                        rect.left =  plate.getLeft();
+                        rect.top = plate.getTop() - 10 - (int)height;
+                        rect.right = plate.getRight();
+                        rect.bottom = plate.getTop();
+
+                        canvas.drawRect(rect, paintBackground);
                         canvas.drawText(name, plate.getLeft(), plate.getTop() - 10 , paintText);
                         imgView.setImageBitmap(mask);
 
@@ -202,7 +226,6 @@ public class DetectionPlate {
         if (cameraSurface == null) return;
         plateList = getAllPlate(bitmap, 50, true);
 
-        Log.d("FINDING", "detectPlate2: "+plateList.size());
         for (PlateInfo plate : plateList) {
             //.d("FINDING", "AHUHU: ");
             int getWidth = plate.getLeft() + plate.getRight()-plate.getLeft() + 10 >bitmap.getWidth() ? plate.getRight()-plate.getLeft(): plate.getRight()-plate.getLeft()+10;
@@ -231,10 +254,17 @@ public class DetectionPlate {
             recognizer.process(image).addOnSuccessListener(new OnSuccessListener<Text>() {
                 @Override
                 public void onSuccess(Text text) {
-                    Log.d("TEXTFIND", text.getText());
+                    Log.d("TEXTFIND2", text.getText());
                     if (text.getTextBlocks().size() > 0){
-                        Text.TextBlock block = text.getTextBlocks().get(0);
-                        if (block.getLines().size() > 1) {
+                        int index = 0;
+                        Text.TextBlock block = text.getTextBlocks().get(index);
+
+                        while (index < text.getTextBlocks().size() && block.getLines().size() < 2){
+                            block = text.getTextBlocks().get(index);
+                            index++;
+                        }
+
+                        if (block.getLines().size() >= 2) {
                             plate.setNamePlate(block.getLines().get(0).getText() + " " +  block.getLines().get(1).getText());
                         }
                     }

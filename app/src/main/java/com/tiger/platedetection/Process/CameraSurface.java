@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
+import android.graphics.Rect;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -68,6 +69,10 @@ public class CameraSurface extends SurfaceView implements SurfaceHolder.Callback
         paintText.setColor(Color.YELLOW);
         paintText.setStyle(Paint.Style.FILL);
 
+        Paint paintBackground = new Paint();
+        paintBackground.setColor(Color.RED);
+        paintBackground.setStyle(Paint.Style.FILL);
+
         int size = 0;
 
         for (PlateInfo plate: plateInfoList) {
@@ -78,16 +83,38 @@ public class CameraSurface extends SurfaceView implements SurfaceHolder.Callback
                 } while(paintText.measureText(plate.getNamePlate()) < ( plate.getRight() - plate.getLeft()));
                 paintText.setTextSize(size - 1);
 
+                Rect rect = new Rect();
+                Paint.FontMetrics fm = paintText.getFontMetrics();
+                float height = fm.descent - fm.ascent;
+
+
+                rect.left =  plate.getLeft();
+                rect.top = plate.getTop() - (int)height;
+                rect.right = plate.getRight();
+                rect.bottom = plate.getTop();
+
+
                 switch (rotation){
                     case 0:
-                        canvas.drawText(plate.getNamePlate(), plate.getLeft(), plate.getTop() - 20, paintText);                        break;
+                        rect.top = plate.getTop() - 20 - (int)height;
+                        canvas.drawRect(rect, paintBackground);
+                        canvas.drawText(plate.getNamePlate(), plate.getLeft(), plate.getTop() - 20, paintText);
+                        //canvas.drawRect(rect, paintBackground);
+                        break;
                     case 90:
+                        rect.top = plate.getTop() - 10 - (int)height;
+                        canvas.drawRect(rect, paintBackground);
                         canvas.drawText(plate.getNamePlate(), plate.getLeft(), plate.getTop() - 10 , paintText);
                         break;
                     case 180:
+                        rect.bottom = plate.getBottom() - 10;
+                        canvas.drawRect(rect, paintBackground);
                         canvas.drawText(plate.getNamePlate(), plate.getLeft() , plate.getBottom() - 10, paintText);
                         break;
                     case 270:
+                        //rect.top = plate.getBottom() - 10;
+                        rect.bottom = plate.getTop() + (int)height;
+                        canvas.drawRect(rect, paintBackground);
                         canvas.drawText(plate.getNamePlate(), plate.getLeft(), plate.getBottom() - 10 , paintText);
                         break;
                 }
