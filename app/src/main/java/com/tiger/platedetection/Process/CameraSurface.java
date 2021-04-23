@@ -76,6 +76,7 @@ public class CameraSurface extends SurfaceView implements SurfaceHolder.Callback
         int size = 0;
 
         for (PlateInfo plate: plateInfoList) {
+            if (!plate.isShow()) continue;
             canvas.drawRect(plate.getLeft(), plate.getTop(), plate.getRight(), plate.getBottom(), paint);
             if (plate.getNamePlate() != ""){
                 do {

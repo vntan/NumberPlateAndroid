@@ -122,7 +122,7 @@ public class DetectionPlate {
 
     synchronized public void detectPlate(Bitmap bitmap) {
 
-        if (imgView == null) return;
+        if (imgView == null || bitmap == null) return;
 
         plateList = getAllPlate(bitmap, 40, false);
 
@@ -141,10 +141,10 @@ public class DetectionPlate {
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(10);
 
-            canvas.drawRect(plate.getLeft(), plate.getTop(), plate.getRight(), plate.getBottom(), paint);
+
 
             int getWidth = plate.getLeft() + plate.getRight()-plate.getLeft() + 10 >bitmap.getWidth() ? plate.getRight()-plate.getLeft(): plate.getRight()-plate.getLeft()+10;
-            int getHeight = plate.getLeft() + plate.getBottom()-plate.getTop() + 10 >bitmap.getHeight() ? plate.getBottom()-plate.getTop(): plate.getBottom()-plate.getTop() + 10;
+            int getHeight = plate.getTop() + plate.getBottom()-plate.getTop() + 10 >bitmap.getHeight() ? plate.getBottom()-plate.getTop(): plate.getBottom()-plate.getTop() + 10;
 
 
             Bitmap bitmapCopy = Bitmap.createBitmap(bitmap, plate.getLeft(), plate.getTop(), getWidth, getHeight);
@@ -174,6 +174,7 @@ public class DetectionPlate {
                     }
 
                     if (name != "") {
+                        canvas.drawRect(plate.getLeft(), plate.getTop(), plate.getRight(), plate.getBottom(), paint);
                         Log.d("FINDING", "detectPlate: "+name);
                         Paint paintText = new Paint();
                         paintText.setColor(Color.YELLOW);
@@ -201,8 +202,13 @@ public class DetectionPlate {
                         rect.right = plate.getRight();
                         rect.bottom = plate.getTop();
 
+
+                        if (plate.getTop() - 10 - height < 0)  rect.top = plate.getTop() + (int)height + 10;
                         canvas.drawRect(rect, paintBackground);
-                        canvas.drawText(name, plate.getLeft(), plate.getTop() - 10 , paintText);
+
+                        if (plate.getTop() - 10 - (int)height < 0) canvas.drawText(name, plate.getLeft(), plate.getTop() + (int)height + 10, paintText);
+                        else
+                            canvas.drawText(name, plate.getLeft(), plate.getTop() - 10 , paintText);
                         imgView.setImageBitmap(mask);
 
                     }
@@ -229,7 +235,7 @@ public class DetectionPlate {
         for (PlateInfo plate : plateList) {
             //.d("FINDING", "AHUHU: ");
             int getWidth = plate.getLeft() + plate.getRight()-plate.getLeft() + 10 >bitmap.getWidth() ? plate.getRight()-plate.getLeft(): plate.getRight()-plate.getLeft()+10;
-            int getHeight = plate.getLeft() + plate.getBottom()-plate.getTop() + 10 >bitmap.getHeight() ? plate.getBottom()-plate.getTop(): plate.getBottom()-plate.getTop() + 10;
+            int getHeight = plate.getTop() + plate.getBottom()-plate.getTop() + 10 >bitmap.getHeight() ? plate.getBottom()-plate.getTop(): plate.getBottom()-plate.getTop() + 10;
 
 
             Bitmap bitmapCopy = Bitmap.createBitmap(bitmap, plate.getLeft(), plate.getTop(), getWidth, getHeight);
@@ -266,17 +272,19 @@ public class DetectionPlate {
 
                         if (block.getLines().size() >= 2) {
                             plate.setNamePlate(block.getLines().get(0).getText() + " " +  block.getLines().get(1).getText());
+                            plate.setShow(true);
+                            cameraSurface.reDraw(plateList, orientation);
                         }
+                    }else{
+                        plate.setShow(false);
+                        cameraSurface.reDraw(plateList, orientation);
                     }
 
-                    cameraSurface.reDraw(plateList, orientation);
                 }
             });
-
-
         }
 
-        cameraSurface.reDraw(plateList, orientation);
+        if (plateList.isEmpty()) cameraSurface.reDraw(plateList, orientation);
 
     }
 

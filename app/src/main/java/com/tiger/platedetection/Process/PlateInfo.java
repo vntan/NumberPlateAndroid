@@ -8,6 +8,8 @@ public class PlateInfo{
     private int left;
     private int bottom;
     private int right;
+    private boolean show;
+
 
     public PlateInfo(String namePlate, int top, int left, int bottom, int right) {
         this.namePlate = namePlate;
@@ -15,6 +17,7 @@ public class PlateInfo{
         this.left = left;
         this.bottom = bottom;
         this.right = right;
+        this.show = false;
     }
 
     public String getNamePlate() {
@@ -55,6 +58,14 @@ public class PlateInfo{
 
     public void setRight(int right) {
         this.right = right;
+    }
+
+    public boolean isShow() {
+        return show;
+    }
+
+    public void setShow(boolean show) {
+        this.show = show;
     }
 }
 
